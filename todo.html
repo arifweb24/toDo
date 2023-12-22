@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sefatun Todo List</title>
+    <link rel="shortcut icon" href="https://www.sefatun.com/wp-content/uploads/2022/05/cropped-Favicon-32x32.png" type="image/x-icon">
+    <style>
+        *{
+
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 50px 0;
+            margin: 0;
+            height: 100vh;
+            background-color: rgb(8, 37, 17);
+        }
+
+        #todo-container {
+            background-color: #fff;
+            padding: 20px;
+            max-height: calc(100vh - 100px);
+            width: 400px;
+            min-width: 300px;
+            max-width: 92%;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 0 25px 5px rgb(43, 81, 81),
+                        inset 0 0 10px rgb(132, 132, 132);
+        }
+
+        #todo-container .head{
+            overflow: hidden;
+            height: 160px;
+            background: #fff;
+        }
+
+        #todo-container h2{
+            text-align: center;
+            margin-top: 0;
+        }
+
+        #input-container {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        #input-container input{
+            width: 100%;
+            height: 40px;
+            padding: 0 60px 0 10px;
+            border: none;
+            border-radius: 3px;
+            outline: none;
+            box-shadow: 0 0 5px #00000060;
+            font-size: 16px;
+            margin: 0 -5px 0 5px;
+        }
+
+        #input-container button{
+            position: absolute;
+            right: 0px;
+            background-color: rgb(38, 38, 38);
+            color: #fff;
+            border: none;
+            height: 40px;
+            border-radius: 0 3px 3px 0;
+            padding: 0 10px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        #input-container button:hover{
+            background-color: black;
+        }
+
+        #filter-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background-color: #f1f1f1;
+            user-select: none;
+        }
+
+        #filter-container label{
+            cursor: pointer;
+        }
+
+        #filter-container button{
+            font-size: 16px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        #todo-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            overflow-y: scroll;
+            height: calc(100vh - 300px);
+        }
+
+        .todo-item {
+            padding: 10px 40px;
+            position: relative;
+            background-color: black;
+            color: #fff;
+            margin-bottom: 10px;
+        }
+
+        .todo-item span{
+            width: 100%;
+            display: inline-block;
+        }
+
+        .todo-item button{
+            position: absolute;
+            right: 10px;
+            cursor: pointer;
+        }
+
+        .todo-item input[type="checkbox"] {
+            position: absolute;
+            left: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="todo-container">
+        <div class="head">
+            <h2>toDo List</h2>
+            <div id="input-container">
+                <input type="text" id="todo-input" placeholder="Add a new task">
+                <button onclick="addTodo()">Add</button>
+            </div>
+            <div id="filter-container">
+                <label><input type="radio" name="filter" value="all" checked onchange="filterTodos('all')">All</label>
+                <label><input type="radio" name="filter" value="completed" onchange="filterTodos('completed')">Done</label>
+                <label><input type="radio" name="filter" value="incomplete" onchange="filterTodos('incomplete')">Remaining</label>
+                <label><button onclick="sortTodos('asc')">↧</button></label>
+                <label><button onclick="sortTodos('desc')">↥</button></label>
+            </div>
+        </div>
+        <ul id="todo-list"></ul>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Load todos from local storage
+            loadTodos();
+        });
+
+        // Current filter state
+        let currentFilter = "all";
+
+        function loadTodos() {
+            const todoList = JSON.parse(localStorage.getItem("todos")) || [];
+            const todoListElement = document.getElementById("todo-list");
+
+            todoListElement.innerHTML = "";
+
+            todoList.forEach(function (todo, index) {
+                if (currentFilter === "all" || (currentFilter === "completed" && todo.completed) || (currentFilter === "incomplete" && !todo.completed)) {
+                    createTodoElement(todo, index);
+                }
+            });
+        }
+
+        function saveTodos(todos) {
+            localStorage.setItem("todos", JSON.stringify(todos));
+        }
+
+        function addTodo() {
+            const inputElement = document.getElementById("todo-input");
+            const todoText = inputElement.value.trim();
+
+            if (todoText !== "") {
+                const todoList = JSON.parse(localStorage.getItem("todos")) || [];
+                todoList.push({ text: todoText, completed: false });
+                saveTodos(todoList);
+
+                // Clear input field
+                inputElement.value = "";
+
+                // Reload todos
+                loadTodos();
+            }
+        }
+
+        function toggleTodoStatus(index) {
+            const todoList = JSON.parse(localStorage.getItem("todos")) || [];
+            todoList[index].completed = !todoList[index].completed;
+            saveTodos(todoList);
+            loadTodos();
+        }
+
+        function deleteTodo(index) {
+            const todoList = JSON.parse(localStorage.getItem("todos")) || [];
+            todoList.splice(index, 1);
+            saveTodos(todoList);
+
+            // Reload todos
+            loadTodos();
+        }
+
+        function filterTodos(filter) {
+            currentFilter = filter;
+            loadTodos();
+        }
+
+        function sortTodos(order) {
+            const todoList = JSON.parse(localStorage.getItem("todos")) || [];
+
+            todoList.sort((a, b) => {
+                return order === 'asc' ? a.text.localeCompare(b.text) : b.text.localeCompare(a.text);
+            });
+
+            const todoListElement = document.getElementById("todo-list");
+            todoListElement.innerHTML = "";
+
+            todoList.forEach(function (todo, index) {
+                if (currentFilter === "all" || (currentFilter === "completed" && todo.completed) || (currentFilter === "incomplete" && !todo.completed)) {
+                    createTodoElement(todo, index);
+                }
+            });
+        }
+
+        function createTodoElement(todo, index) {
+            const todoListElement = document.getElementById("todo-list");
+
+            const li = document.createElement("li");
+            li.className = "todo-item";
+
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.checked = todo.completed;
+            checkbox.addEventListener("change", function () {
+                toggleTodoStatus(index);
+            });
+
+            const text = document.createElement("span");
+            text.innerText = todo.text;
+
+            const deleteButton = document.createElement("button");
+            deleteButton.innerText = "X";
+            deleteButton.addEventListener("click", function () {
+                deleteTodo(index);
+            });
+
+            li.appendChild(checkbox);
+            li.appendChild(text);
+            li.appendChild(deleteButton);
+
+            todoListElement.appendChild(li);
+        }
+    </script>
+</body>
+</html>
+

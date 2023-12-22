@@ -107,7 +107,7 @@
         }
 
         .todo-item {
-            padding: 10px 40px;
+            padding: 10px 40px 10px 60px;
             position: relative;
             background-color: black;
             color: #fff;
@@ -115,6 +115,18 @@
         }
 
         .todo-item span{
+            position: absolute;
+            left: 10px;
+            cursor: grabbing;
+        }
+
+        .todo-item input[type="checkbox"] {
+            position: absolute;
+            left: 30px;
+            cursor: pointer;
+        }
+
+        .todo-item div{
             width: 100%;
             display: inline-block;
         }
@@ -125,10 +137,16 @@
             cursor: pointer;
         }
 
-        .todo-item input[type="checkbox"] {
-            position: absolute;
-            left: 10px;
-            cursor: pointer;
+        .gu-mirror {
+            position: fixed !important;
+            margin: 0 !important;
+            z-index: 9999 !important;
+            opacity: 0.8;
+            background-color: #ccc; /* Background color during dragging */
+        }
+
+        .gu-hide {
+            display: none !important;
         }
     </style>
 </head>
@@ -152,7 +170,160 @@
         <ul id="todo-list"></ul>
     </div>
 
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dragula/3.7.2/dragula.min.js"></script>
     <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Load todos from local storage
+            loadTodos();
+
+            // Enable drag-and-drop
+            enableDragAndDrop();
+        });
+
+        // Current filter state
+        let currentFilter = "all";
+
+        function loadTodos() {
+            const todoList = JSON.parse(localStorage.getItem("todos")) || [];
+            const todoListElement = document.getElementById("todo-list");
+
+            todoListElement.innerHTML = "";
+
+            todoList.forEach(function (todo, index) {
+                if (currentFilter === "all" || (currentFilter === "completed" && todo.completed) || (currentFilter === "incomplete" && !todo.completed)) {
+                    createTodoElement(todo, index);
+                }
+            });
+        }
+
+        function saveTodos(todos) {
+            localStorage.setItem("todos", JSON.stringify(todos));
+        }
+
+        function addTodo() {
+            const inputElement = document.getElementById("todo-input");
+            const todoText = inputElement.value.trim();
+
+            if (todoText !== "") {
+                const todoList = JSON.parse(localStorage.getItem("todos")) || [];
+                todoList.push({ text: todoText, completed: false });
+                saveTodos(todoList);
+
+                // Clear input field
+                inputElement.value = "";
+
+                // Reload todos
+                loadTodos();
+            }
+        }
+
+        function toggleTodoStatus(index) {
+            const todoList = JSON.parse(localStorage.getItem("todos")) || [];
+            todoList[index].completed = !todoList[index].completed;
+            saveTodos(todoList);
+            loadTodos();
+        }
+
+        function deleteTodo(index) {
+            // Ask for confirmation before deleting
+            const confirmation = confirm("Are you sure you want to delete this task?");
+            
+            if (confirmation) {
+                const todoList = JSON.parse(localStorage.getItem("todos")) || [];
+                todoList.splice(index, 1);
+                saveTodos(todoList);
+
+                // Reload todos
+                loadTodos();
+            }
+        }
+
+        function filterTodos(filter) {
+            currentFilter = filter;
+            loadTodos();
+        }
+
+        function sortTodos(order) {
+            const todoList = JSON.parse(localStorage.getItem("todos")) || [];
+
+            todoList.sort((a, b) => {
+                return order === 'asc' ? a.text.localeCompare(b.text) : b.text.localeCompare(a.text);
+            });
+
+            const todoListElement = document.getElementById("todo-list");
+            todoListElement.innerHTML = "";
+
+            todoList.forEach(function (todo, index) {
+                if (currentFilter === "all" || (currentFilter === "completed" && todo.completed) || (currentFilter === "incomplete" && !todo.completed)) {
+                    createTodoElement(todo, index);
+                }
+            });
+        }
+
+        function enableDragAndDrop() {
+            const todoListElement = document.getElementById("todo-list");
+
+            const drake = dragula([todoListElement], {
+                moves: (el, container, handle) => handle.classList.contains('drag-handle'),
+                direction: 'vertical',
+            });
+
+            drake.on('drop', () => {
+                // Reorder tasks based on the new order after drag-and-drop
+                const todoList = Array.from(todoListElement.children).map((li, index) => {
+                    const checkbox = li.querySelector('input[type="checkbox"]');
+                    return {
+                        text: li.querySelector('span').innerText,
+                        completed: checkbox.checked,
+                    };
+                });
+
+                // Save the reordered list
+                saveTodos(todoList);
+            });
+        }
+
+        function createTodoElement(todo, index) {
+            const todoListElement = document.getElementById("todo-list");
+
+            const li = document.createElement("li");
+            li.className = "todo-item";
+
+            const dragHandle = document.createElement('span');
+            dragHandle.className = 'drag-handle';
+            dragHandle.innerText = '☰';
+
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.checked = todo.completed;
+            checkbox.addEventListener("change", function () {
+                toggleTodoStatus(index);
+            });
+
+            const text = document.createElement("div");
+            text.innerText = todo.text;
+
+            const deleteButton = document.createElement("button");
+            deleteButton.innerText = "X";
+            deleteButton.addEventListener("click", function () {
+                deleteTodo(index);
+            });
+
+            li.appendChild(dragHandle);
+            li.appendChild(checkbox);
+            li.appendChild(text);
+            li.appendChild(deleteButton);
+
+            todoListElement.appendChild(li);
+        }
+
+    </script>
+
+
+
+    <!--script>
         document.addEventListener("DOMContentLoaded", function () {
             // Load todos from local storage
             loadTodos();
@@ -203,12 +374,17 @@
         }
 
         function deleteTodo(index) {
-            const todoList = JSON.parse(localStorage.getItem("todos")) || [];
-            todoList.splice(index, 1);
-            saveTodos(todoList);
+            // Ask for confirmation before deleting
+            const confirmation = confirm("Are you sure you want to delete this task?");
+            
+            if (confirmation) {
+                const todoList = JSON.parse(localStorage.getItem("todos")) || [];
+                todoList.splice(index, 1);
+                saveTodos(todoList);
 
-            // Reload todos
-            loadTodos();
+                // Reload todos
+                loadTodos();
+            }
         }
 
         function filterTodos(filter) {
@@ -261,7 +437,7 @@
 
             todoListElement.appendChild(li);
         }
-    </script>
+    </script-->
 </body>
 </html>
 

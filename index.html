@@ -202,6 +202,7 @@
             localStorage.setItem("todos", JSON.stringify(todos));
         }
 
+
         function addTodo() {
             const inputElement = document.getElementById("todo-input");
             const todoText = inputElement.value.trim();
@@ -275,15 +276,18 @@
                 const todoList = Array.from(todoListElement.children).map((li, index) => {
                     const checkbox = li.querySelector('input[type="checkbox"]');
                     return {
-                        text: li.querySelector('span').innerText,
+                        text: li.querySelector('div').innerText,
                         completed: checkbox.checked,
                     };
                 });
+
+                console.log(todoList); // Log the order of tasks
 
                 // Save the reordered list
                 saveTodos(todoList);
             });
         }
+
 
         function createTodoElement(todo, index) {
             const todoListElement = document.getElementById("todo-list");
@@ -322,4 +326,3 @@
     </script>
 </body>
 </html>
-
